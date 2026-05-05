@@ -1,3 +1,14 @@
 # Terraform: Up & Running
-    writing Infrastructure as Code
+
+本リポジトリの目的は、以下の書籍の学習です。
+気づいたことなどを、コメントなどを残していきます。
+
+## 参考書籍
+
+- 書籍名: `詳解Terraform`
+- 著者: `Yevgeniy Brikman`
+- 訳者: `松浦 隼人`
+- 発行所: `株式会社オライリー・ジャパン`
+- 発売元: `株式会社オーム社`
+- ISBN: `978-4-8144-0052-2`
 
