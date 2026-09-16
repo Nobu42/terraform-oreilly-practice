@@ -27,3 +27,4 @@ terraform.rc
 *.tfplan
 plan.out
 
+.DS_Store
