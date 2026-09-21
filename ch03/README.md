@@ -4,7 +4,7 @@
 
 記録日: 2026-09-16
 
-> S3・MySQL・Webクラスタを別の構成として管理し、それぞれのStateをS3へ保存しました。DBの出力をWeb側から読み取り、ブラウザに表示するところまで確認しました。
+> S3・MySQL・Webクラスタを別の構成として管理し、それぞれのStateをS3へ保存した。DBの出力をWeb側から読み取り、ブラウザに表示するところまで確認した。
 
 ## 目次
 
@@ -21,7 +21,7 @@
 
 ## この章の要点
 
-**単にフォルダを分けるのではなく、管理するリソースの単位ごとにコードとStateを分離すること**を学びました。
+**単にフォルダを分けるのではなく、管理するリソースの単位ごとにコードとStateを分離すること**を学んだ。
 
 | 構成 | 役割 | 作成順 |
 | --- | --- | --- |
@@ -29,8 +29,8 @@
 | MySQL | ステージング環境のデータベース | 2 |
 | Webクラスタ | ステージング環境のWebサーバ。DBの出力値を参照 | 3 |
 
-各フォルダで個別に `init`・`plan`・`apply` を行います。親の `ch03` で実行しても、配下の全フォルダがまとめて実行されるわけではありません。
-今回のS3はアプリケーション用のデータ置き場ではなく、TerraformのState保存用です。
+各フォルダで個別に `init`・`plan`・`apply` を行う。親の `ch03` で実行しても、配下の全フォルダがまとめて実行されるわけではない。
+今回のS3はアプリケーション用のデータ置き場ではなく、TerraformのState保存用である。
 
 ## Stateの保存とロック
 
@@ -43,8 +43,8 @@
 | `.terraform.lock.hcl` | Providerの選択バージョンと検証用情報を記録する |
 | State lock | 同じStateに対する同時操作を調整する仕組み |
 
-**`.terraform.lock.hcl` は、AWSリソースのStateでも、同時実行を防ぐロックそのものでもありません。**
-また、`.terraform/terraform.tfstate` はバックエンド設定のメタデータであり、S3上のリソースStateそのものではありません。
+**`.terraform.lock.hcl` は、AWSリソースのStateでも、同時実行を防ぐロックそのものでもない。**
+また、`.terraform/terraform.tfstate` はバックエンド設定のメタデータであり、S3上のリソースStateそのものではない。
 
 ### 保存先として用意したもの
 
@@ -54,7 +54,7 @@
 - DynamoDBのロック用テーブル。課金モードは `PAY_PER_REQUEST`、パーティションキーは文字列型の `LockID`。
 - S3の `lifecycle { prevent_destroy = true }`。
 
-S3のバージョニングは推奨される保護策で、バックエンド利用そのものの必須条件とは区別します。
+S3のバージョニングは推奨される保護策で、バックエンド利用そのものの必須条件とは区別する。
 
 ### 削除関連の設定
 
@@ -63,23 +63,23 @@ S3のバージョニングは推奨される保護策で、バックエンド利
 | `force_destroy = true` | S3の削除時、内容があっても削除を許可する。設定しただけで即削除されるわけではない |
 | `lifecycle { prevent_destroy = true }` | そのリソースを削除・置き換えするTerraformの計画を拒否する |
 
-この2つは逆の目的の設定です。`prevent_destroy` はAWSコンソールやCLIからの削除を防ぐものではなく、リソース定義自体をコードから取り除いた場合にも保護は残りません。
+この2つは逆の目的の設定である。`prevent_destroy` はAWSコンソールやCLIからの削除を防ぐものではなく、リソース定義自体をコードから取り除いた場合にも保護は残らない。
 
-今回、S3を管理するフォルダで `destroy` を実行すると、`prevent_destroy` によって計画段階で停止しました。その実行では削除は行われていません。
+今回、S3を管理するフォルダで `destroy` を実行すると、`prevent_destroy` によって計画段階で停止した。その実行では削除は行われていない。
 
 ### DynamoDBの非推奨警告
 
-`dynamodb_table` の警告はエラーではなく、実際にStateのロック取得・解除は成功しました。
-この学習では書籍に合わせてDynamoDB方式を使っています。現在はS3の `use_lockfile` が用意されているため、新しく設計する場合は対応バージョンとIAM権限も含めて検討します。今回は方式の切り替え自体は実施していません。
+`dynamodb_table` の警告はエラーではなく、実際にStateのロック取得・解除は成功した。
+この学習では書籍に合わせてDynamoDB方式を使っている。現在はS3の `use_lockfile` が用意されているため、新しく設計する場合は対応バージョンとIAM権限も含めて検討する。今回は方式の切り替え自体は実施していない。
 
 参考: [S3バックエンド](https://developer.hashicorp.com/terraform/language/backend/s3)、[prevent_destroy](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle#prevent_destroy)、[S3バケットの削除設定](https://github.com/hashicorp/terraform-provider-aws/blob/v4.67.0/website/docs/r/s3_bucket.html.markdown)
 
 ## S3バックエンドへの移行
 
-まずローカルStateでS3・DynamoDBを作り、その後S3バックエンドを設定して既存Stateを移しました。
-バックエンドが使うS3バケットは、バックエンド初期化より先に存在している必要があります。
+まずローカルStateでS3・DynamoDBを作り、その後S3バックエンドを設定して既存Stateを移した。
+バックエンドが使うS3バケットは、バックエンド初期化より先に存在している必要がある。
 
-次は設定の抜粋です。`<STATE_BUCKET_NAME>` と `<LOCK_TABLE_NAME>` は、自分が作成した名前に置き換えます。
+次は設定の抜粋である。`<STATE_BUCKET_NAME>` と `<LOCK_TABLE_NAME>` は、自分が作成した名前に置き換える。
 
 ```hcl
 terraform {
@@ -100,15 +100,15 @@ terraform {
 - 実際の初回移行では `terraform init` の「既存Stateをコピーするか」という確認に `yes` と答えた。
 - 移行後に `plan` と `apply` を行い、`No changes`、`0 added, 0 changed, 0 destroyed` を確認した。
 
-既存の保存先からの移行には `terraform init -migrate-state` を使う場面があります。`-reconfigure` は既存Stateを移行する指定ではないため、同じものとして扱わないことが重要です。
+既存の保存先からの移行には `terraform init -migrate-state` を使う場面がある。`-reconfigure` は既存Stateを移行する指定ではないため、同じものとして扱わないことが重要である。
 
 参考: [バックエンドの設定](https://developer.hashicorp.com/terraform/language/backend)、[terraform init](https://developer.hashicorp.com/terraform/cli/commands/init)
 
 ### 部分設定について
 
-書籍の `backend.hcl` は、バケット・リージョンなどの共通設定を外へ出す方法です。
-`.hcl` という名前だけで自動的に読み込まれるわけではなく、`terraform init -backend-config=backend.hcl` のように指定します。
-今回の構成では設定を `main.tf` に直接書いており、外出しは必須ではありません。部分設定は説明を確認した内容で、実行済みとは扱いません。
+書籍の `backend.hcl` は、バケット・リージョンなどの共通設定を外へ出す方法である。
+`.hcl` という名前だけで自動的に読み込まれるわけではなく、`terraform init -backend-config=backend.hcl` のように指定する。
+今回の構成では設定を `main.tf` に直接書いており、外出しは必須ではない。部分設定は説明を確認した内容で、実行済みとは扱わない。
 
 ## フォルダとStateの分離
 
@@ -135,7 +135,7 @@ ch03/
             `-- user-data.sh
 ```
 
-`.terraform/` と `.terraform.lock.hcl` も、初期化した構成ごとに存在します。
+`.terraform/` と `.terraform.lock.hcl` も、初期化した構成ごとに存在する。
 
 | 対象 | コード | S3内のStateのkey |
 | --- | --- | --- |
@@ -143,15 +143,15 @@ ch03/
 | DB | [stage/data-stores/mysql](stage/data-stores/mysql/main.tf) | `stage/data-stores/mysql/terraform.tfstate` |
 | Web | [stage/services/webserver-cluster](stage/services/webserver-cluster/main.tf) | `stage/services/webserver-cluster/terraform.tfstate` |
 
-同じS3バケットでも、各構成の `key` を変えます。無関係な構成で同じStateを共有すると、別の構成のリソースまで削除対象にしてしまう危険があります。
+同じS3バケットでも、各構成の `key` を変える。無関係な構成で同じStateを共有すると、別の構成のリソースまで削除対象にしてしまう危険がある。
 
-`stage` はステージング環境、`state` はTerraformの管理情報です。名前が似ていますが別の単語です。
-ローカルの `global/s3` は「globalの中のs3」というディレクトリ構造で、`mkdir -p global/s3` で作成できます。
+`stage` はステージング環境、`state` はTerraformの管理情報である。名前が似ているが別の単語である。
+ローカルの `global/s3` は「globalの中のs3」というディレクトリ構造で、`mkdir -p global/s3` で作成できる。
 
 ### S3のkeyの意味
 
-`key` は、バケット内のオブジェクトを識別する名前です。OSの「ファイル名まで含めたパス」に近い表現です。
-今回の通常のS3バケットでは実際のディレクトリ階層があるわけではなく、`/` を含むキーをコンソールがフォルダのように表示します。
+`key` は、バケット内のオブジェクトを識別する名前である。OSの「ファイル名まで含めたパス」に近い表現である。
+今回の通常のS3バケットでは実際のディレクトリ階層があるわけではなく、`/` を含むキーをコンソールがフォルダのように表示する。
 
 参考: [S3のオブジェクトキー](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html)
 
@@ -166,16 +166,16 @@ ch03/
 
 ### Workspaceとの違い
 
-CLI Workspaceは同じコード・作業ディレクトリの中でStateを切り替える仕組みです。新しいWorkspaceは、既存Workspaceの管理対象を自分のStateとして引き継ぎません。
-今回はフォルダ分離を実施しました。書籍の `example1`・`example2` のWorkspace演習については、説明を確認したものの、作成完了ログは確認していません。
+CLI Workspaceは同じコード・作業ディレクトリの中でStateを切り替える仕組みである。新しいWorkspaceは、既存Workspaceの管理対象を自分のStateとして引き継がない。
+今回はフォルダ分離を実施した。書籍の `example1`・`example2` のWorkspace演習については、説明を確認したものの、作成完了ログは確認していない。
 
-フォルダやStateを分けるだけではAWSの権限までは分離されません。今回の個人検証は同じアカウント・プロファイルを利用しており、本番とステージングをアカウント・認証・権限まで分ける設計とは区別します。
+フォルダやStateを分けるだけではAWSの権限までは分離されない。今回の個人検証は同じアカウント・プロファイルを利用しており、本番とステージングをアカウント・認証・権限まで分ける設計とは区別する。
 
 参考: [CLI Workspaces](https://developer.hashicorp.com/terraform/cli/workspaces)
 
 ## MySQLの作成
 
-RDSにMySQLを1つ作成しました。[main.tf](stage/data-stores/mysql/main.tf) の主要部分です。
+RDSにMySQLを1つ作成した。[main.tf](stage/data-stores/mysql/main.tf) の主要部分である。
 
 ```hcl
 resource "aws_db_instance" "example" {
@@ -200,10 +200,10 @@ resource "aws_db_instance" "example" {
 | 出力 | [outputs.tf](stage/data-stores/mysql/outputs.tf) で `address` と `port` を公開 |
 | 削除 | `skip_final_snapshot = true` のため、削除時に最終スナップショットを残さない |
 
-第2章のEC2の `t2.micro` と、RDSの `db.t2.micro` は別のサービスの設定です。RDSの変更を、そのままEC2の変更理由として扱いません。
+第2章のEC2の `t2.micro` と、RDSの `db.t2.micro` は別のサービスの設定である。RDSの変更を、そのままEC2の変更理由として扱わない。
 
-作成結果は `Resources: 1 added, 0 changed, 0 destroyed`。出力されたポートは `3306` でした。
-実際のDBエンドポイントは、この公開用記録では省略しています。
+作成結果は `Resources: 1 added, 0 changed, 0 destroyed`。出力されたポートは `3306` だった。
+実際のDBエンドポイントは、この公開用記録では省略している。
 
 参考: [RDSのDBクラス](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.Types.html)、[ストレージ容量の条件](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CreateDBInstance.html)、[Provider v4.67.0のDB仕様](https://github.com/hashicorp/terraform-provider-aws/blob/v4.67.0/website/docs/r/db_instance.html.markdown)
 
@@ -211,8 +211,8 @@ resource "aws_db_instance" "example" {
 
 ### 入力欄は実行確認ではない
 
-`var.xxx` に続く `Enter a value:` は、その変数の値を入力する欄です。
-すべてに `yes` と答えるわけではありません。
+`var.xxx` に続く `Enter a value:` は、その変数の値を入力する欄である。
+すべてに `yes` と答えるわけではない。
 
 | 入力欄 | 入れるもの |
 | --- | --- |
@@ -223,12 +223,12 @@ resource "aws_db_instance" "example" {
 | `var.db_remote_state_key` | `stage/data-stores/mysql/terraform.tfstate` |
 | `apply`・`destroy` の最終確認 | 計画が意図どおりなら `yes` |
 
-実際に `db_name` に `yes` と入力すると、`yes` というDB名の計画になりました。
-バケット名とキーの入力で `yes` と答えたときは、バケット `yes` のオブジェクト `yes` を読もうとして403エラーになりました。そこで必要だったのは権限の拡張ではなく、入力値の修正です。
+実際に `db_name` に `yes` と入力すると、`yes` というDB名の計画になった。
+バケット名とキーの入力で `yes` と答えたときは、バケット `yes` のオブジェクト `yes` を読もうとして403エラーになった。そこで必要だったのは権限の拡張ではなく、入力値の修正である。
 
 ### コマンド引数で渡す
 
-Web側の実行例です。バケット名は置き換えてください。
+Web側の実行例である。バケット名は置き換える。
 
 ```bash
 terraform plan \
@@ -236,11 +236,11 @@ terraform plan \
   -var='db_remote_state_key=stage/data-stores/mysql/terraform.tfstate'
 ```
 
-`-var` はその実行に対する指定です。次の `terraform apply` でも同じ値が必要なので、同じ `-var` を付けるか、入力欄で正しい値を渡します。
+`-var` はその実行に対する指定である。次の `terraform apply` でも同じ値が必要なので、同じ `-var` を付けるか、入力欄で正しい値を渡す。
 
 ### 環境変数で渡す
 
-`TF_VAR_` に変数名を続けると、Terraformの入力値として渡せます。
+`TF_VAR_` に変数名を続けると、Terraformの入力値として渡せる。
 今回のBashで、DB認証情報をコマンド履歴に直書きしない入力例:
 
 ```bash
@@ -250,12 +250,12 @@ printf '\n'
 export TF_VAR_db_username TF_VAR_db_password
 ```
 
-パスワードは画面に表示されません。この設定はそのシェルから実行するTerraformに引き継がれ、別のターミナルへ自動で設定されるものではありません。
-作成済みのDBを同じ設定で扱う場合は、作成時の値を使います。
+パスワードは画面に表示されない。この設定はそのシェルから実行するTerraformに引き継がれ、別のターミナルへ自動で設定されるものではない。
+作成済みのDBを同じ設定で扱う場合は、作成時の値を使う。
 
-`sensitive = true` は表示の抑制です。コードに直書きした秘密を消す仕組みではなく、今回の `password` 引数はStateにも保存されます。
-一度コードを連結した `.txt` にも秘密が残るため、元の `.tf` を修正しただけで安心しないことが重要です。
-また、Remote Stateの読み取り権限を持つ人はState全体へアクセスできるため、出力値だけを見せる安全な境界とは考えません。
+`sensitive = true` は表示の抑制である。コードに直書きした秘密を消す仕組みではなく、今回の `password` 引数はStateにも保存される。
+一度コードを連結した `.txt` にも秘密が残るため、元の `.tf` を修正しただけで安心しないことが重要である。
+また、Remote Stateの読み取り権限を持つ人はState全体へアクセスできるため、出力値だけを見せる安全な境界とは考えない。
 
 参考: [TF_VAR](https://developer.hashicorp.com/terraform/cli/config/environment-variables#tf_var_name)、[機密情報の扱い](https://developer.hashicorp.com/terraform/language/manage-sensitive-data)
 
@@ -263,7 +263,7 @@ export TF_VAR_db_username TF_VAR_db_password
 
 ### 自分のStateと参照するState
 
-Web側には、S3を指定する設定が2か所ありますが、目的が違います。
+Web側には、S3を指定する設定が2か所あるが、目的が違う。
 
 | 設定 | 用途 | key |
 | --- | --- | --- |
@@ -283,21 +283,21 @@ data "terraform_remote_state" "db" {
 }
 ```
 
-DB側の [outputs.tf](stage/data-stores/mysql/outputs.tf) が公開した値を、次のように参照します。
+DB側の [outputs.tf](stage/data-stores/mysql/outputs.tf) が公開した値を、次のように参照する。
 
 ```hcl
 data.terraform_remote_state.db.outputs.address
 data.terraform_remote_state.db.outputs.port
 ```
 
-DBの `plan` だけでは、今回必要な出力を持つStateは用意できません。先にDB側の `apply` を完了し、そのStateをWeb側が読みます。
-別フォルダのDBを、Web側の `apply` が自動で作成してくれるわけではありません。
+DBの `plan` だけでは、今回必要な出力を持つStateは用意できない。先にDB側の `apply` を完了し、そのStateをWeb側が読む。
+別フォルダのDBを、Web側の `apply` が自動で作成してくれるわけではない。
 
 参考: [terraform_remote_state](https://developer.hashicorp.com/terraform/language/state/remote-state-data)
 
 ### User Dataに埋め込む
 
-Web側の [main.tf](stage/services/webserver-cluster/main.tf) から、[user-data.sh](stage/services/webserver-cluster/user-data.sh) に3つの値を渡します。
+Web側の [main.tf](stage/services/webserver-cluster/main.tf) から、[user-data.sh](stage/services/webserver-cluster/user-data.sh) に3つの値を渡す。
 
 ```hcl
 user_data = base64encode(templatefile("user-data.sh", {
@@ -325,11 +325,11 @@ nohup busybox httpd -f -p ${server_port} &
 4. 起動したEC2がスクリプトを実行し、HTMLを作ってHTTPサーバを起動する。
 5. ブラウザからALB経由で表示を確認する。
 
-`${...}` は今回のテンプレート変数の展開に使います。`$(...)` と書くと、シェルのコマンド置換になってしまいます。
-テンプレートへ渡すキー名と、テンプレート内の名前は完全に一致させます。
+`${...}` は今回のテンプレート変数の展開に使う。`$(...)` と書くと、シェルのコマンド置換になってしまう。
+テンプレートへ渡すキー名と、テンプレート内の名前は完全に一致させる。
 
-**このWebページはDBの接続先を表示するだけで、MySQLへの接続やSQL実行はしていません。**
-また、Webページは起動時に生成した内容です。DBのStateを更新しただけで、稼働中のページが自動的に書き換わる仕組みではありません。
+**このWebページはDBの接続先を表示するだけで、MySQLへの接続やSQL実行はしていない。**
+また、Webページは起動時に生成した内容である。DBのStateを更新しただけで、稼働中のページが自動的に書き換わる仕組みではない。
 
 参考: [templatefile](https://developer.hashicorp.com/terraform/language/functions/templatefile)、[base64encode](https://developer.hashicorp.com/terraform/language/functions/base64encode)
 
@@ -371,19 +371,19 @@ nohup busybox httpd -f -p ${server_port} &
 | `db_name` に `yes` を入力 | 承認ではなく、自分で決めたDB名を入力 |
 | パスワードを `default` へ直書き | 初期値を取り除き、対話入力・環境変数などで渡す |
 
-修正後は `fmt` と `validate` を行い、その後に `plan` で確認しました。
-`validate` が成功しても、Stateの読み取りやAWS側の作成条件まで確認済みとは限りません。
+修正後は `fmt` と `validate` を行い、その後に `plan` で確認した。
+`validate` が成功しても、Stateの読み取りやAWS側の作成条件まで確認済みとは限らない。
 
 ## 後片付け
 
 ### 削除する順番
 
-**Webクラスタ -> MySQL** の順で削除する方針にしました。DB側のStateが必要なWeb側を先に片付けます。
-S3とロック用DynamoDBは共通基盤として残す方針です。
+**Webクラスタ -> MySQL** の順で削除する方針にした。DB側のStateが必要なWeb側を先に片付ける。
+S3とロック用DynamoDBは共通基盤として残す方針である。
 
-> 以下は復習用の手順です。実際の削除では、対象のState・ワークスペースと削除計画を確認してください。DBのデータが必要なら、そのまま削除しないでください。
+> 以下は復習用の手順である。実際の削除では、対象のState・ワークスペースと削除計画を確認する。DBのデータが必要なら、そのまま削除しない。
 
-Web側のディレクトリで、まず削除計画を確認します。`<STATE_BUCKET_NAME>` は置き換えます。
+Web側のディレクトリで、まず削除計画を確認する。`<STATE_BUCKET_NAME>` は置き換える。
 
 ```bash
 terraform plan -destroy \
@@ -391,7 +391,7 @@ terraform plan -destroy \
   -var='db_remote_state_key=stage/data-stores/mysql/terraform.tfstate'
 ```
 
-意図した対象だけであれば、次を実行します。実行前にも表示される計画を確認します。
+意図した対象だけであれば、次を実行する。実行前にも表示される計画を確認する。
 
 ```bash
 terraform destroy \
@@ -399,18 +399,18 @@ terraform destroy \
   -var='db_remote_state_key=stage/data-stores/mysql/terraform.tfstate'
 ```
 
-Web側の完了後、MySQLのディレクトリで `terraform destroy` を実行します。
-削除時も入力変数を聞かれる場合があります。作成時と同じ値を渡し、最終確認のときだけ `yes` と答えます。
-今回のDBは最終スナップショットを残さない設定なので、データを残したい場合は削除前に対応が必要です。
+Web側の完了後、MySQLのディレクトリで `terraform destroy` を実行する。
+削除時も入力変数を聞かれる場合がある。作成時と同じ値を渡し、最終確認のときだけ `yes` と答える。
+今回のDBは最終スナップショットを残さない設定なので、データを残したい場合は削除前に対応が必要である。
 
 ### S3は先に削除しない
 
-今回のS3は、他の構成に加えてS3自身を管理するStateも保存しています。
-`prevent_destroy` を外すだけで削除に進まず、共通基盤まで完全撤去する場合は、すべての利用構成を確認し、必要なStateをローカルなど別のバックエンドへ移行してから片付けます。
-バージョニング済みオブジェクトの削除は、復旧用の過去Stateも失う操作です。
+今回のS3は、他の構成に加えてS3自身を管理するStateも保存している。
+`prevent_destroy` を外すだけで削除に進まず、共通基盤まで完全撤去する場合は、すべての利用構成を確認し、必要なStateをローカルなど別のバックエンドへ移行してから片付ける。
+バージョニング済みオブジェクトの削除は、復旧用の過去Stateも失う操作である。
 
-`destroy` 後もStateやS3の過去バージョンは残り得ます。リソースの削除と、State履歴の消去を同一視しません。
-また、完了判定は `Destroy complete!` に加え、管理対象の確認やAWS側の残存リソースの確認で行います。この資料の作成時にAWSへの照会は行っていません。
+`destroy` 後もStateやS3の過去バージョンは残り得る。リソースの削除と、State履歴の消去を同一視しない。
+また、完了判定は `Destroy complete!` に加え、管理対象の確認やAWS側の残存リソースの確認で行う。この資料の作成時にAWSへの照会は行っていない。
 
 参考: [terraform destroy](https://developer.hashicorp.com/terraform/cli/commands/destroy)
 
@@ -428,6 +428,6 @@ Web側の完了後、MySQLのディレクトリで `terraform destroy` を実行
 | Web・DBの削除 | 手順を確認し、MySQLの `destroy` の入力段階まで共有された。両構成の削除完了ログは未確認 |
 | S3・DynamoDB | 残す方針。記録作成時点のAWS実環境は照会していない |
 
-**学習の完了と、課金対象リソースの削除完了は別に確認すること**が、最後の注意点です。
+**学習の完了と、課金対象リソースの削除完了は別に確認すること**が、最後の注意点である。
 
 [トップに戻る](#第3章-state管理と構成の分離) | [第2章へ](../ch02/README.md) | [リポジトリのトップ](../README.md)

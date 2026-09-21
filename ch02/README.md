@@ -4,7 +4,7 @@
 
 記録日: 2026-09-16
 
-> 単一EC2の作成から始め、変数・出力・依存関係を学び、ALBとAuto Scaling Groupを使う構成へ進んだ記録です。既存のAWS CLI用スクリプトをTerraform化することが目的ではありません。
+> 単一EC2の作成から始め、変数・出力・依存関係を学び、ALBとAuto Scaling Groupを使う構成へ進んだ記録である。既存のAWS CLI用スクリプトをTerraform化することが目的ではない。
 
 ## 目次
 
@@ -31,7 +31,7 @@
 | Output | 作成したリソースの属性などを、外部に公開する出力値 |
 | State | Terraformのリソース定義と実際のAWSリソースの対応を管理する情報 |
 
-設定管理ツールは主にサーバ内のパッケージや設定を整え、プロビジョニングツールは主にサーバ・ネットワークなどの基盤を用意するもの、と整理しました。ただし、役割には重なる部分もあります。
+設定管理ツールは主にサーバ内のパッケージや設定を整え、プロビジョニングツールは主にサーバ・ネットワークなどの基盤を用意するもの、と整理した。ただし、役割には重なる部分もある。
 
 ### 現在のコード
 
@@ -40,7 +40,7 @@
 - [outputs.tf](outputs.tf): ALBのDNS名
 - [.terraform.lock.hcl](.terraform.lock.hcl): 使用するProviderの選択結果
 
-現在のコードはクラスタ構成です。最初の単一EC2のコードは、学習過程で置き換えています。
+現在のコードはクラスタ構成である。最初の単一EC2のコードは、学習過程で置き換えている。
 
 ## 基本コマンド
 
@@ -64,10 +64,10 @@ terraform plan
 terraform apply
 ```
 
-`plan` の `1 to add, 0 to change, 0 to destroy` は「新規作成1件、変更0件、削除0件」という意味です。
-`known after apply` は「反映後に値が決まる」という意味で、エラーではありません。
+`plan` の `1 to add, 0 to change, 0 to destroy` は「新規作成1件、変更0件、削除0件」という意味である。
+`known after apply` は「反映後に値が決まる」という意味で、エラーではない。
 
-`plan -out=...` で保存していない計画は、後の `apply` で再計算されます。直前の計画と完全に同じ内容を実行する保証はありません。
+`plan -out=...` で保存していない計画は、後の `apply` で再計算される。直前の計画と完全に同じ内容を実行する保証はない。
 
 参考: [Terraform CLI](https://developer.hashicorp.com/terraform/cli/commands)
 
@@ -75,7 +75,7 @@ terraform apply
 
 ### 認証とリージョン
 
-既存のAWS認証情報を使い、Providerにプロファイルとリージョンを明示しました。
+既存のAWS認証情報を使い、Providerにプロファイルとリージョンを明示した。
 
 ```hcl
 provider "aws" {
@@ -84,33 +84,33 @@ provider "aws" {
 }
 ```
 
-AWS CLIのプロファイルはTerraformでも利用できます。アクセスキーをTerraformコードへ書き込む必要はありません。
-ただし、異なるプロファイル名でも、同じアカウント・同じ権限を使っている場合があります。
+AWS CLIのプロファイルはTerraformでも利用できる。アクセスキーをTerraformコードへ書き込む必要はない。
+ただし、異なるプロファイル名でも、同じアカウント・同じ権限を使っている場合がある。
 
 ### AMIの選択
 
-AMI IDはリージョンごとに異なります。コンソールで `us-east-1` を見ながら、Terraformでは `us-east-2` を指定したため、`InvalidAMIID.NotFound` が発生しました。
+AMI IDはリージョンごとに異なる。コンソールで `us-east-1` を見ながら、Terraformでは `us-east-2` を指定したため、`InvalidAMIID.NotFound` が発生した。
 
 - コンソールとProviderのリージョンを合わせる。
 - `t2.micro` に対応するx86_64のAMIを選ぶ。
 - MacがArmであることと、EC2側のCPUアーキテクチャは別の話。
 - 書籍や過去のAMI IDが、現在も利用できるとは限らない。
 
-リージョンに合うUbuntu AMIへ変更した後、EC2の起動に成功しました。`Name` タグも追加し、コンソール上で反映を確認しました。
+リージョンに合うUbuntu AMIへ変更した後、EC2の起動に成功した。`Name` タグも追加し、コンソール上で反映を確認した。
 
 ### Webページの起動
 
-`user_data` で `index.html` を作り、BusyBoxのHTTPサーバを8080番ポートで起動しました。
-Security GroupでTCP 8080を許可し、ブラウザで `Hello, World` を確認しました。
+`user_data` で `index.html` を作り、BusyBoxのHTTPサーバを8080番ポートで起動した。
+Security GroupでTCP 8080を許可し、ブラウザで `Hello, World` を確認した。
 
-`aws_instance` に `user_data_replace_on_change = true` を設定した際は、User Dataの変更によりEC2が置き換えられました。インスタンスIDやパブリックIPが変わることも確認しました。
+`aws_instance` に `user_data_replace_on_change = true` を設定した際は、User Dataの変更によりEC2が置き換えられた。インスタンスIDやパブリックIPが変わることも確認した。
 
-> `0.0.0.0/0` から8080番ポートを許可したのは書籍の学習用設定です。そのまま本番環境の公開範囲として採用するものではありません。
+> `0.0.0.0/0` から8080番ポートを許可したのは書籍の学習用設定である。そのまま本番環境の公開範囲として採用するものではない。
 
 ## 変数と出力
 
-**同じディレクトリの `.tf` ファイルは、まとめて一つの構成として読み込まれます。**
-`main.tf` が `variables.tf` や `outputs.tf` を呼び出すわけではありません。ファイル名は整理のための慣例で、実行順序を決めません。
+**同じディレクトリの `.tf` ファイルは、まとめて一つの構成として読み込まれる。**
+`main.tf` が `variables.tf` や `outputs.tf` を呼び出すわけではない。ファイル名は整理のための慣例で、実行順序を決めない。
 
 | 種類 | 例 | 意味 |
 | --- | --- | --- |
@@ -129,15 +129,15 @@ output "alb_dns_name" {
 }
 ```
 
-`variable` はリソース名だけを受け取るものではなく、ポート・サイズ・フラグなども受け取れます。
-`output` も入力変数の値だけを表示するものではなく、作成後に決まる属性や計算結果などを公開できます。
-同じ構成内では `output.alb_dns_name` ではなく、元のリソース属性を参照します。
+`variable` はリソース名だけを受け取るものではなく、ポート・サイズ・フラグなども受け取れる。
+`output` も入力変数の値だけを表示するものではなく、作成後に決まる属性や計算結果などを公開できる。
+同じ構成内では `output.alb_dns_name` ではなく、元のリソース属性を参照する。
 
 参考: [入力変数](https://developer.hashicorp.com/terraform/language/values/variables)、[出力値](https://developer.hashicorp.com/terraform/language/values/outputs)
 
 ## Webサーバクラスタ
 
-単一EC2から、複数のEC2をASGで維持し、ALBで受け付ける構成へ進めました。
+単一EC2から、複数のEC2をASGで維持し、ALBで受け付ける構成へ進めた。
 
 ```text
 ブラウザ
@@ -158,16 +158,16 @@ output "alb_dns_name" {
 | Security Group | ALBの80番、EC2の8080番などの通信を制御する |
 | Data source | デフォルトVPCと、そのVPCのサブネットを検索する |
 
-ASGは `min_size = 2`、`max_size = 10` です。最大10台と定義するだけで、負荷に応じたスケーリングポリシーが自動作成されるわけではありません。
-また、ASGが起動するEC2の台数と、Terraformの `Plan: N to add` のリソース数は別の数え方です。
+ASGは `min_size = 2`、`max_size = 10` である。最大10台と定義するだけで、負荷に応じたスケーリングポリシーが自動作成されるわけではない。
+また、ASGが起動するEC2の台数と、Terraformの `Plan: N to add` のリソース数は別の数え方である。
 
-ALBのデフォルトアクションは404ですが、今回のルールは `*` に一致するとTarget Groupへ転送します。
-ALB側のSecurity Groupでは、EC2への転送やヘルスチェックのために送信ルールも設定しました。
+ALBのデフォルトアクションは404だが、今回のルールは `*` に一致するとTarget Groupへ転送する。
+ALB側のSecurity Groupでは、EC2への転送やヘルスチェックのために送信ルールも設定した。
 
 ## Launch Templateへの変更
 
-書籍の `aws_launch_configuration` では、このアカウントで作成を拒否されました。
-現在のAWSの制限に合わせ、`aws_launch_template` に置き換えました。
+書籍の `aws_launch_configuration` では、このアカウントで作成を拒否された。
+現在のAWSの制限に合わせ、`aws_launch_template` に置き換えた。
 
 | Launch Configuration側 | Launch Template側 |
 | --- | --- |
@@ -183,31 +183,31 @@ launch_template {
 }
 ```
 
-**Vimでリソース名を一括置換するだけでは足りません。引数名・参照方法・データ形式も変わります。**
+**Vimでリソース名を一括置換するだけでは足りない。引数名・参照方法・データ形式も変わる。**
 
-`create_before_destroy = true` は、置き換えが必要なときに新しいリソースを先に作る設定です。削除禁止ではありません。
-現在のコードにはLaunch Configuration時代のコメントが残っていますが、Launch Templateへの変更後も同じ意味で「必須」と断定しないように注意します。
-また、Launch Templateのバージョン更新だけで、稼働中のEC2が必ず入れ替わるわけではありません。
+`create_before_destroy = true` は、置き換えが必要なときに新しいリソースを先に作る設定である。削除禁止ではない。
+現在のコードにはLaunch Configuration時代のコメントが残っているが、Launch Templateへの変更後も同じ意味で「必須」と断定しないように注意する。
+また、Launch Templateのバージョン更新だけで、稼働中のEC2が必ず入れ替わるわけではない。
 
 参考: [AWSのLaunch Configuration制限](https://docs.aws.amazon.com/autoscaling/ec2/userguide/launch-configurations.html)、[Provider v4.67.0のLaunch Template仕様](https://github.com/hashicorp/terraform-provider-aws/blob/v4.67.0/website/docs/r/launch_template.html.markdown)、[lifecycle](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle)
 
 ## 依存関係の可視化
 
-例えば `vpc_security_group_ids = [aws_security_group.instance.id]` と書くと、EC2の起動設定がSecurity Groupに依存していることをTerraformが読み取ります。
+例えば `vpc_security_group_ids = [aws_security_group.instance.id]` と書くと、EC2の起動設定がSecurity Groupに依存していることをTerraformが読み取る。
 
 ```bash
 terraform graph | dot -Tpng > graph.png
 open graph.png
 ```
 
-Graphvizの `dot` が利用できる環境で、依存関係をPNGにできます。
+Graphvizの `dot` が利用できる環境で、依存関係をPNGにできる。
 
 ![第2章のTerraform依存関係グラフ](graph.png)
 
 [画像を開く](graph.png)
 
-**この図は通信経路図ではありません。** `A -> B` は「AがBを参照・依存する」という向きです。
-削除時は依存する側から片付ける必要があるため、作成時とは逆の順序になる場面があります。
+**この図は通信経路図ではない。** `A -> B` は「AがBを参照・依存する」という向きである。
+削除時は依存する側から片付ける必要があるため、作成時とは逆の順序になる場面がある。
 
 参考: [terraform graph](https://developer.hashicorp.com/terraform/cli/commands/graph)
 
@@ -224,10 +224,10 @@ Graphvizの `dot` が利用できる環境で、依存関係をPNGにできま�
 | Launch Configurationの `UnsupportedOperation` | AWS側の制限で作成不可 | Launch Templateへ変更し、関連引数も修正する |
 | `apply` 失敗後もALBなどが残った | 全体が自動でロールバックされるわけではなかった | `terraform state list` で成功済みの対象を確認する |
 
-この学習では、v6.63.0へ戻して既存Stateを読める状態にし、単一EC2とSGの削除計画を確認したうえで2リソースを削除しました。その後、書籍のv4系へ戻しました。
-これは**不要な学習用リソースを削除できる条件で行った対処**です。本番でProviderを下げるために安易にリソースを削除する手順ではありません。
+この学習では、v6.63.0へ戻して既存Stateを読める状態にし、単一EC2とSGの削除計画を確認したうえで2リソースを削除した。その後、書籍のv4系へ戻した。
+これは**不要な学習用リソースを削除できる条件で行った対処**である。本番でProviderを下げるために安易にリソースを削除する手順ではない。
 
-`terraform init -upgrade` の「upgrade」は、指定された制約の範囲で選び直すという意味です。制約をv6からv4へ変えれば、選ばれるバージョンが下がる場合もあります。
+`terraform init -upgrade` の「upgrade」は、指定された制約の範囲で選び直すという意味である。制約をv6からv4へ変えれば、選ばれるバージョンが下がる場合もある。
 
 ### コードの書き間違い
 
@@ -243,7 +243,7 @@ Graphvizの `dot` が利用できる環境で、依存関係をPNGにできま�
 | Launch Templateで `security_groups` を指定 | `vpc_security_group_ids` に修正 |
 | `alb_name` の初期値がポート番号の `8080` | 名前として `"terraform-asg-example"` を指定 |
 
-`alb_name` の数値は文字列へ変換される場合があるため、`validate` が必ず意図の間違いを指摘してくれるとは限りません。ポート用の変数と名前用の変数を区別します。
+`alb_name` の数値は文字列へ変換される場合があるため、`validate` が必ず意図の間違いを指摘してくれるとは限らない。ポート用の変数と名前用の変数を区別する。
 
 ## Gitと開発環境
 
@@ -253,7 +253,7 @@ Graphvizの `dot` が利用できる環境で、依存関係をPNGにできま�
 - HTTPSのGitHub認証は通常のパスワードではなく、対象リポジトリに絞ったトークンを利用した。値は記録・共有しない。
 - コミット用スクリプトに、エラー時停止、変更内容表示、実行前の確認を追加した。
 
-エディターについては、VS CodeのTerraform拡張とVim操作も試しました。その後、主に既存のVim環境を使い、`terraform-ls` や補完について学びました。設定の完全な再現手順やLSP接続状態は、この記録では確認済みとは扱いません。
+エディターについては、VS CodeのTerraform拡張とVim操作も試した。その後、主に既存のVim環境を使い、`terraform-ls` や補完について学んだ。設定の完全な再現手順やLSP接続状態は、この記録では確認済みとは扱わない。
 
 ## 確認できた結果
 
@@ -266,6 +266,6 @@ Graphvizの `dot` が利用できる環境で、依存関係をPNGにできま�
 | Launch Templateへの変更 | `validate` 成功、ASGとLaunch Templateの2件追加計画まで確認 |
 | クラスタを使う後続の動作確認 | [第3章](../ch03/README.md#確認できた結果)で、DB情報を含むWebページの表示を確認 |
 
-章の終了と、AWSリソースの削除完了は別の確認です。[第3章の後片付け](../ch03/README.md#後片付け)も参照してください。
+章の終了と、AWSリソースの削除完了は別の確認である。[第3章の後片付け](../ch03/README.md#後片付け)も参照する。
 
 [トップに戻る](#第2章-terraformの基本とwebサーバクラスタ) | [第3章へ](../ch03/README.md)
