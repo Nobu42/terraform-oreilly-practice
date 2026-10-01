@@ -1,0 +1,6 @@
+stage/data-stores/mysql/terraform.tfstate
+nobu-iac-running-state
+
+terraform apply \
+  -var='db_remote_state_bucket=nobu-iac-running-state' \
+  -var='db_remote_state_key=stage/data-stores/mysql/terraform.tfstate'

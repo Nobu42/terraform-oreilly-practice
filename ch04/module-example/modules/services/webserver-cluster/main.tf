@@ -7,6 +7,7 @@ terraform {
       version = "~> 4.0"
     }
   }
+}
 
 resource "aws_launch_template" "example" {
   image_id               = "ami-0e5497a77ef21b5ac"
@@ -19,6 +20,14 @@ resource "aws_launch_template" "example" {
     db_port     = data.terraform_remote_state.db.outputs.port
   }))
 
+  # user_data = base64encode(<<-EOF
+  #            #!/bin/bash
+  #            echo "Hello, World" > index.html
+  #            nohup busybox httpd -f -p 8080 &
+  #            EOF
+  #  )
+
+  # Required when using a launch configuration with an auto scaling group.
   lifecycle {
     create_before_destroy = true
   }
@@ -30,8 +39,8 @@ resource "aws_autoscaling_group" "example" {
     version = "$Latest"
   }
   vpc_zone_identifier = data.aws_subnets.default.ids
-  target_group_arns = [aws_lb_target_group.asg.arn]
-  health_check_type = "ELB"
+  target_group_arns   = [aws_lb_target_group.asg.arn]
+  health_check_type   = "ELB"
 
   min_size = var.min_size
   max_size = var.max_size
@@ -44,7 +53,7 @@ resource "aws_autoscaling_group" "example" {
 }
 
 resource "aws_security_group" "instance" {
-  name = name = "${var.cluster_name}-instance"
+  name = "${var.cluster_name}-instance"
 }
 
 resource "aws_security_group_rule" "allow_server_http_inbound" {
@@ -58,32 +67,35 @@ resource "aws_security_group_rule" "allow_server_http_inbound" {
 }
 
 resource "aws_lb" "example" {
-  name                = var.cluster_name
-  load_balancer_type  = data.aws_subnets.default.ids
-  security_groups     = [aws_security_group.alb.id]
+  name               = var.cluster_name
+  load_balancer_type = "application"
+  subnets            = data.aws_subnets.default.ids
+  security_groups    = [aws_security_group.alb.id]
 }
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.example.arn
-  port              = local.http_port
-  protocol          = "HTTP"
+
+  port = local.http_port
+
+  protocol = "HTTP"
 
   default_action {
-    type = "fixed_response"
-    
+    type = "fixed-response"
+
     fixed_response {
       content_type = "text/plain"
       message_body = "404: page not found"
-      status_code = 404
+      status_code  = 404
     }
   }
 }
 
-response "aws_lb_target_group" "asg" {
-  name      = var.cluster_name
-  port      = var.server_port
-  protocol  = "HTTP"
-  vpc_id    = data.aws_vpc.default.id
+resource "aws_lb_target_group" "asg" {
+  name     = var.cluster_name
+  port     = var.server_port
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.default.id
 
   health_check {
     path                = "/"
@@ -92,7 +104,7 @@ response "aws_lb_target_group" "asg" {
     interval            = 15
     timeout             = 3
     healthy_threshold   = 2
-    unhealthy_threshold = 2 
+    unhealthy_threshold = 2
   }
 }
 
@@ -102,13 +114,13 @@ resource "aws_lb_listener_rule" "asg" {
 
   condition {
     path_pattern {
-      value = ["*"]
+      values = ["*"]
     }
   }
 
   action {
-    type              = "forward"
-    target_group_arn  = aws_lb_target_group.asg.arn
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.asg.arn
   }
 }
 
@@ -116,9 +128,9 @@ resource "aws_security_group" "alb" {
   name = "${var.cluster_name}-alb"
 }
 
-resource "aws_security_group_rule" "allow_server_http_inbound" {
-  type                = "ingress"
-  security_group_id   = aws_security_group.alb.id
+resource "aws_security_group_rule" "allow_alb_http_inbound" {
+  type              = "ingress"
+  security_group_id = aws_security_group.alb.id
 
   from_port   = local.http_port
   to_port     = local.http_port
@@ -140,18 +152,19 @@ data "terraform_remote_state" "db" {
   backend = "s3"
 
   config = {
-    bucket = var.db_remote_state_bucket
-    key    = var.db_remote_state_key
-    region = "us-east-2"
+    bucket  = var.db_remote_state_bucket
+    key     = var.db_remote_state_key
+    region  = "us-east-2"
+    profile = "terraform-learning"
   }
 }
 
 locals {
-  http_port     = 80
-  any_port      = 0
-  any_protocol  = "-1"
-  tcp_protocol  = "tcp"
-  all_ips       = ["0.0.0.0/0"]
+  http_port    = 80
+  any_port     = 0
+  any_protocol = "-1"
+  tcp_protocol = "tcp"
+  all_ips      = ["0.0.0.0/0"]
 }
 
 data "aws_vpc" "default" {
@@ -160,7 +173,7 @@ data "aws_vpc" "default" {
 
 data "aws_subnets" "default" {
   filter {
-    name      = "vpc_id"
+    name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
 }
